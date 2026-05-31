@@ -1,7 +1,6 @@
 using System;
 using ChatProcessor.Shared;
 using ChatProcessor.Shared.Models;
-using HexTags.Core.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -51,21 +50,13 @@ internal sealed class ChatHookModule : IModule
         {
             var tag = _resolver.Resolve(msg.SteamId);
 
-            // Apply tag + name color to the Name field.
+            // Write raw color tokens — ChatProcessor's SayText2 hook owns ProcessColorCodes.
             // Result: <NameColor><Tag><OriginalName><reset>
-            var nameColor = ChatFormat.ProcessColorCodes(tag.NameColor);
-            var prefix    = ChatFormat.ProcessColorCodes(tag.Tag);
-            var reset     = ChatFormat.ProcessColorCodes("{default}");
+            if (!string.IsNullOrEmpty(tag.Tag) || !string.IsNullOrEmpty(tag.NameColor))
+                msg.Name = $"{tag.NameColor}{tag.Tag}{msg.Name}{{default}}";
 
-            if (!string.IsNullOrEmpty(prefix) || !string.IsNullOrEmpty(nameColor))
-                msg.Name = $"{nameColor}{prefix}{msg.Name}{reset}";
-
-            // Apply chat color to the message itself.
             if (!string.IsNullOrEmpty(tag.ChatColor))
-            {
-                var chatColor = ChatFormat.ProcessColorCodes(tag.ChatColor);
-                msg.Message = $"{chatColor}{msg.Message}";
-            }
+                msg.Message = $"{tag.ChatColor}{msg.Message}";
         }
         catch (Exception e)
         {
