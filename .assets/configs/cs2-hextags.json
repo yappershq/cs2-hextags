@@ -1,0 +1,46 @@
+{
+  "Enabled": true,
+  "Rules": [
+    {
+      "Name": "Root",
+      "Match": { "Type": "AdminFlag", "Value": "@modsharp/root" },
+      "Tag": "{red}[Root]{default} ",
+      "NameColor": "{red}",
+      "ChatColor": "{default}",
+      "ScoreboardTag": "ROOT",
+      "Priority": 100
+    },
+    {
+      "Name": "Admin",
+      "Match": { "Type": "AdminFlag", "Value": "@admin" },
+      "Tag": "{green}[Admin]{default} ",
+      "NameColor": "{green}",
+      "ChatColor": "{default}",
+      "Priority": 80
+    },
+    {
+      "Name": "VIP",
+      "Match": { "Type": "Vip", "Value": "" },
+      "Tag": "{gold}[VIP]{default} ",
+      "NameColor": "{gold}",
+      "ChatColor": "{default}",
+      "Priority": 50
+    },
+    {
+      "Name": "SteamId",
+      "Match": { "Type": "SteamId", "Value": "76561198071396118" },
+      "Tag": "{lime}[Owner]{default} ",
+      "NameColor": "{lime}",
+      "ChatColor": "{lightblue}",
+      "Priority": 200
+    },
+    {
+      "Name": "Default",
+      "Match": { "Type": "Default", "Value": "" },
+      "Tag": "",
+      "NameColor": "",
+      "ChatColor": "",
+      "Priority": 0
+    }
+  ]
+}
