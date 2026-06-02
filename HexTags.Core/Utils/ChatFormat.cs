@@ -13,6 +13,8 @@ internal static class ChatFormat
         { "{default}",    ChatColor.White },
         { "{darkred}",    ChatColor.DarkRed },
         { "{pink}",       ChatColor.Pink },
+        { "{team}",       ChatColor.Pink },  // \x03 — engine renders as sender's team colour
+        { "{teamcolor}",  ChatColor.Pink },
         { "{green}",      ChatColor.Green },
         { "{lightgreen}", ChatColor.LightGreen },
         { "{lime}",       ChatColor.Lime },
