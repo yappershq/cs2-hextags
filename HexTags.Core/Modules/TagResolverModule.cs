@@ -12,10 +12,11 @@ namespace HexTags.Core.Modules;
 
 internal sealed class ResolvedTag
 {
-    internal string Tag           { get; init; } = string.Empty;
-    internal string NameColor     { get; init; } = string.Empty;
-    internal string ChatColor     { get; init; } = string.Empty;
-    internal string ScoreboardTag { get; init; } = string.Empty;
+    internal string Tag           { get; set; } = string.Empty;
+    internal string Suffix        { get; set; } = string.Empty;
+    internal string NameColor     { get; set; } = string.Empty;
+    internal string ChatColor     { get; set; } = string.Empty;
+    internal string ScoreboardTag { get; set; } = string.Empty;
 }
 
 internal sealed class TagResolverModule : IModule, IClientListener
@@ -71,23 +72,33 @@ internal sealed class TagResolverModule : IModule, IClientListener
             return new ResolvedTag();
 
         var am = _bridge.AdminManager;
+        var resolved = new ResolvedTag();
 
-        // Rules are pre-sorted by priority DESC at load time; first match wins.
+        // Rules pre-sorted by priority DESC at load time. Walk every match
+        // and let each field fill from the first matching rule that sets it
+        // — so an Admin rule (high pri, sets Tag/NameColor) can co-exist
+        // with a VIP rule (lower pri, sets Suffix). Admin-only player gets
+        // just the admin prefix; VIP-only gets the VIP prefix + suffix it
+        // configured; Admin+VIP gets admin prefix + VIP suffix.
         foreach (var rule in _config.Rules)
         {
             if (!Matches(rule, steamId, am))
                 continue;
 
-            return new ResolvedTag
-            {
-                Tag           = rule.Tag,
-                NameColor     = rule.NameColor,
-                ChatColor     = rule.ChatColor,
-                ScoreboardTag = rule.ScoreboardTag,
-            };
+            if (resolved.Tag.Length           == 0 && rule.Tag.Length           > 0) resolved.Tag           = rule.Tag;
+            if (resolved.Suffix.Length        == 0 && rule.Suffix.Length        > 0) resolved.Suffix        = rule.Suffix;
+            if (resolved.NameColor.Length     == 0 && rule.NameColor.Length     > 0) resolved.NameColor     = rule.NameColor;
+            if (resolved.ChatColor.Length     == 0 && rule.ChatColor.Length     > 0) resolved.ChatColor     = rule.ChatColor;
+            if (resolved.ScoreboardTag.Length == 0 && rule.ScoreboardTag.Length > 0) resolved.ScoreboardTag = rule.ScoreboardTag;
+
+            // Short-circuit when every slot is filled.
+            if (resolved.Tag.Length > 0 && resolved.Suffix.Length > 0
+                && resolved.NameColor.Length > 0 && resolved.ChatColor.Length > 0
+                && resolved.ScoreboardTag.Length > 0)
+                break;
         }
 
-        return new ResolvedTag();
+        return resolved;
     }
 
     private bool Matches(TagRule rule, ulong steamId, IAdminManager? am)

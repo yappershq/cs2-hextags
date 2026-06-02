@@ -51,9 +51,9 @@ internal sealed class ChatHookModule : IModule
             var tag = _resolver.Resolve(msg.SteamId);
 
             // Write raw color tokens — ChatProcessor's SayText2 hook owns ProcessColorCodes.
-            // Result: <NameColor><Tag><OriginalName><reset>
-            if (!string.IsNullOrEmpty(tag.Tag) || !string.IsNullOrEmpty(tag.NameColor))
-                msg.Name = $"{tag.NameColor}{tag.Tag}{msg.Name}{{default}}";
+            // Result: <NameColor><Tag><OriginalName><Suffix><reset>
+            if (!string.IsNullOrEmpty(tag.Tag) || !string.IsNullOrEmpty(tag.NameColor) || !string.IsNullOrEmpty(tag.Suffix))
+                msg.Name = $"{tag.NameColor}{tag.Tag}{msg.Name}{tag.Suffix}{{default}}";
 
             if (!string.IsNullOrEmpty(tag.ChatColor))
                 msg.Message = $"{tag.ChatColor}{msg.Message}";

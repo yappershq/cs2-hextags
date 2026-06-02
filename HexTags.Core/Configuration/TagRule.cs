@@ -7,6 +7,7 @@ internal sealed class TagRule
     [JsonPropertyName("Name")]     public string   Name          { get; set; } = string.Empty;
     [JsonPropertyName("Match")]    public MatchSpec Match         { get; set; } = new();
     [JsonPropertyName("Tag")]      public string   Tag           { get; set; } = string.Empty;
+    [JsonPropertyName("Suffix")]   public string   Suffix        { get; set; } = string.Empty;
     [JsonPropertyName("NameColor")] public string  NameColor     { get; set; } = string.Empty;
     [JsonPropertyName("ChatColor")] public string  ChatColor     { get; set; } = string.Empty;
     [JsonPropertyName("ScoreboardTag")] public string ScoreboardTag { get; set; } = string.Empty;
