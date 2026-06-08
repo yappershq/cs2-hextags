@@ -51,9 +51,13 @@ internal sealed class ChatHookModule : IModule
             var tag = _resolver.Resolve(msg.SteamId);
 
             // Write raw color tokens — ChatProcessor's SayText2 hook owns ProcessColorCodes.
-            // Result: <NameColor><Tag><OriginalName><Suffix><reset>
+            // Result: <Tag><NameColor><OriginalName><Suffix><reset>
+            // NameColor must come AFTER the Tag — otherwise the Tag's trailing colour
+            // overrides it and the name just bleeds the tag colour (name_color would be dead).
+            // With it after the Tag: empty name_color -> name still bleeds the tag colour;
+            // a set name_color actually colours the name.
             if (!string.IsNullOrEmpty(tag.Tag) || !string.IsNullOrEmpty(tag.NameColor) || !string.IsNullOrEmpty(tag.Suffix))
-                msg.Name = $"{tag.NameColor}{tag.Tag}{msg.Name}{tag.Suffix}{{default}}";
+                msg.Name = $"{tag.Tag}{tag.NameColor}{msg.Name}{tag.Suffix}{{default}}";
 
             if (!string.IsNullOrEmpty(tag.ChatColor))
                 msg.Message = $"{tag.ChatColor}{msg.Message}";
