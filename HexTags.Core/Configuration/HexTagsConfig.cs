@@ -7,10 +7,32 @@ using Microsoft.Extensions.Logging;
 
 namespace HexTags.Core.Configuration;
 
+internal sealed class DatabaseConfig
+{
+    [JsonPropertyName("Host")]     public string Host     { get; set; } = string.Empty;
+    [JsonPropertyName("Port")]     public int    Port     { get; set; } = 3306;
+    [JsonPropertyName("User")]     public string User     { get; set; } = string.Empty;
+    [JsonPropertyName("Password")] public string Password { get; set; } = string.Empty;
+    [JsonPropertyName("Name")]     public string Name     { get; set; } = string.Empty;
+}
+
 internal sealed class HexTagsConfig
 {
-    [JsonPropertyName("Enabled")] public bool          Enabled { get; set; } = true;
-    [JsonPropertyName("Rules")]   public List<TagRule> Rules   { get; set; } = [];
+    [JsonPropertyName("Enabled")]     public bool           Enabled     { get; set; } = true;
+
+    // When true (and a DB host is configured) rules are sourced from the shared
+    // MySQL DB; the JSON Rules below are kept as offline fallback + initial seed.
+    [JsonPropertyName("UseDatabase")] public bool           UseDatabase { get; set; } = true;
+
+    // Identifies this server in the DB (rows with server='all' or server=ServerTag apply).
+    [JsonPropertyName("ServerTag")]   public string         ServerTag   { get; set; } = string.Empty;
+
+    // How often (seconds, min 15) to poll the DB version marker for changes.
+    [JsonPropertyName("PollSeconds")] public int            PollSeconds { get; set; } = 60;
+
+    [JsonPropertyName("Database")]    public DatabaseConfig Database    { get; set; } = new();
+
+    [JsonPropertyName("Rules")]       public List<TagRule>  Rules       { get; set; } = [];
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -55,7 +77,11 @@ internal sealed class HexTagsConfig
 
     private static HexTagsConfig BuildDefault() => new()
     {
-        Enabled = true,
+        Enabled     = true,
+        UseDatabase = true,
+        ServerTag   = string.Empty,
+        PollSeconds = 60,
+        Database    = new DatabaseConfig(),
         Rules =
         [
             new()

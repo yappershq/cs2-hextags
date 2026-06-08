@@ -22,10 +22,12 @@ internal static class ModuleDependencyInjection
         services.AddSingleton<TagResolverModule>();
         services.AddSingleton<ChatHookModule>();
         services.AddSingleton<ScoreboardTagModule>();
+        services.AddSingleton<RuleSyncModule>();
 
         services.AddSingleton<IModule>(sp => sp.GetRequiredService<TagResolverModule>());
         services.AddSingleton<IModule>(sp => sp.GetRequiredService<ChatHookModule>());
         services.AddSingleton<IModule>(sp => sp.GetRequiredService<ScoreboardTagModule>());
+        services.AddSingleton<IModule>(sp => sp.GetRequiredService<RuleSyncModule>());
 
         return services;
     }

@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using HexTags.Core.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,6 +28,11 @@ internal sealed class TagResolverModule : IModule, IClientListener
     private readonly HexTagsConfig                               _config;
     private readonly ConcurrentDictionary<ulong, ResolvedTag>    _cache = new();
 
+    // Swappable rule set. Seeded from JSON at construction so JSON-only servers
+    // work without any DB; RuleSyncModule may replace it live via ReplaceRules.
+    // volatile so the off-thread DB poller's swap is visible to game-thread reads.
+    private volatile TagRule[] _rules;
+
     private IVipShared? _vip;
 
     int IClientListener.ListenerVersion  => IClientListener.ApiVersion;
@@ -36,6 +43,22 @@ internal sealed class TagResolverModule : IModule, IClientListener
         _bridge = bridge;
         _logger = logger;
         _config = config;
+
+        // Config.Rules is already sorted DESC at load; re-sort defensively.
+        _rules = config.Rules.OrderByDescending(static r => r.Priority).ToArray();
+    }
+
+    /// <summary>
+    ///     Atomically replace the active rule set (e.g. from the DB sync poller).
+    ///     Sorts DESC by priority, swaps the volatile reference, then clears the
+    ///     resolution cache so consumers re-resolve against the new rules live.
+    /// </summary>
+    internal void ReplaceRules(IEnumerable<TagRule> rules)
+    {
+        var arr = rules.OrderByDescending(static r => r.Priority).ToArray();
+        _rules = arr;        // volatile swap — readers see the whole new array atomically
+        _cache.Clear();
+        _logger.LogInformation("[HexTags] Rule set replaced ({Count} rules)", arr.Length);
     }
 
     public bool Init()
@@ -74,28 +97,62 @@ internal sealed class TagResolverModule : IModule, IClientListener
         var am = _bridge.AdminManager;
         var resolved = new ResolvedTag();
 
-        // Rules pre-sorted by priority DESC at load time. Walk every match
-        // and let each field fill from the first matching rule that sets it
-        // — so an Admin rule (high pri, sets Tag/NameColor) can co-exist
-        // with a VIP rule (lower pri, sets Suffix). Admin-only player gets
-        // just the admin prefix; VIP-only gets the VIP prefix + suffix it
-        // configured; Admin+VIP gets admin prefix + VIP suffix.
-        foreach (var rule in _config.Rules)
+        // VIP is positioned contextually: if the player has a higher role
+        // (admin/dev) it becomes a trailing suffix; if VIP is the top role it
+        // becomes the prefix. The VIP rule supplies BOTH forms — its Tag is the
+        // prefix form, its Suffix is the trailing form — so admins control each
+        // independently in config.
+        var vipMatched = false;
+        var vipPrefix  = string.Empty;
+        var vipSuffix  = string.Empty;
+
+        // Snapshot the volatile rule array once so a concurrent ReplaceRules swap
+        // can't change what we iterate mid-loop.
+        var rules = _rules;
+
+        // Rules pre-sorted by priority DESC at load time. The dominant
+        // (highest-priority) non-VIP rule sets the prefix Tag; each remaining
+        // field fills from the first matching rule that sets it.
+        foreach (var rule in rules)
         {
             if (!Matches(rule, steamId, am))
                 continue;
 
-            if (resolved.Tag.Length           == 0 && rule.Tag.Length           > 0) resolved.Tag           = rule.Tag;
-            if (resolved.Suffix.Length        == 0 && rule.Suffix.Length        > 0) resolved.Suffix        = rule.Suffix;
+            var isVipRule = rule.Match.Type is "Vip" or "VipFlag";
+
+            if (isVipRule)
+            {
+                if (!vipMatched)
+                {
+                    vipMatched = true;
+                    vipPrefix  = rule.Tag;
+                    vipSuffix  = rule.Suffix;
+                }
+            }
+            else
+            {
+                if (resolved.Tag.Length    == 0 && rule.Tag.Length    > 0) resolved.Tag    = rule.Tag;
+                if (resolved.Suffix.Length == 0 && rule.Suffix.Length > 0) resolved.Suffix = rule.Suffix;
+            }
+
             if (resolved.NameColor.Length     == 0 && rule.NameColor.Length     > 0) resolved.NameColor     = rule.NameColor;
             if (resolved.ChatColor.Length     == 0 && rule.ChatColor.Length     > 0) resolved.ChatColor     = rule.ChatColor;
             if (resolved.ScoreboardTag.Length == 0 && rule.ScoreboardTag.Length > 0) resolved.ScoreboardTag = rule.ScoreboardTag;
+        }
 
-            // Short-circuit when every slot is filled.
-            if (resolved.Tag.Length > 0 && resolved.Suffix.Length > 0
-                && resolved.NameColor.Length > 0 && resolved.ChatColor.Length > 0
-                && resolved.ScoreboardTag.Length > 0)
-                break;
+        if (vipMatched)
+        {
+            if (resolved.Tag.Length > 0)
+            {
+                // Higher role owns the prefix -> VIP trails the name as a suffix.
+                if (resolved.Suffix.Length == 0)
+                    resolved.Suffix = vipSuffix.Length > 0 ? vipSuffix : vipPrefix;
+            }
+            else
+            {
+                // VIP is the top role -> VIP owns the prefix, no suffix.
+                resolved.Tag = vipPrefix.Length > 0 ? vipPrefix : vipSuffix;
+            }
         }
 
         return resolved;

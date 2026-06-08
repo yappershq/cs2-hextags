@@ -1,46 +1,34 @@
 {
   "Enabled": true,
+
+  // When true AND Database.Host is set, rules are sourced from the shared MySQL DB.
+  // The Rules below are still used as the offline fallback and the initial DB seed.
+  "UseDatabase": true,
+
+  // Identifies this server in the DB. Rows with server='all' or server=<ServerTag> apply.
+  // Leave empty to only receive 'all' rows.
+  "ServerTag": "",
+
+  // How often (seconds, min 15) to poll the DB version marker for changes.
+  "PollSeconds": 60,
+
+  // Fill these in on the deployed server only — do NOT commit real credentials.
+  "Database": {
+    "Host": "",
+    "Port": 3306,
+    "User": "",
+    "Password": "",
+    "Name": ""
+  },
+
   "Rules": [
-    {
-      "Name": "Root",
-      "Match": { "Type": "AdminFlag", "Value": "@modsharp/root" },
-      "Tag": "{red}[Root]{default} ",
-      "NameColor": "{red}",
-      "ChatColor": "{default}",
-      "ScoreboardTag": "ROOT",
-      "Priority": 100
-    },
-    {
-      "Name": "Admin",
-      "Match": { "Type": "AdminFlag", "Value": "@admin" },
-      "Tag": "{green}[Admin]{default} ",
-      "NameColor": "{green}",
-      "ChatColor": "{default}",
-      "Priority": 80
-    },
-    {
-      "Name": "VIP",
-      "Match": { "Type": "Vip", "Value": "" },
-      "Tag": "{gold}[VIP]{default} ",
-      "NameColor": "{gold}",
-      "ChatColor": "{default}",
-      "Priority": 50
-    },
-    {
-      "Name": "SteamId",
-      "Match": { "Type": "SteamId", "Value": "76561198071396118" },
-      "Tag": "{lime}[Owner]{default} ",
-      "NameColor": "{lime}",
-      "ChatColor": "{lightblue}",
-      "Priority": 200
-    },
-    {
-      "Name": "Default",
-      "Match": { "Type": "Default", "Value": "" },
-      "Tag": "",
-      "NameColor": "",
-      "ChatColor": "",
-      "Priority": 0
-    }
+    { "Name": "Developer",   "Match": { "Type": "SteamId",   "Value": "76561198071396118" }, "Tag": "{lightblue}[DEV] ",  "ChatColor": "{lightblue}", "ScoreboardTag": "DEV",  "Priority": 1000 },
+    { "Name": "Root",        "Match": { "Type": "AdminFlag", "Value": "*" },                 "Tag": "{red}[Root] ",       "ScoreboardTag": "ROOT", "Priority": 500 },
+    { "Name": "SeniorAdmin", "Match": { "Type": "AdminFlag", "Value": "admin:rcon" },        "Tag": "{red}[Sr.Admin] ",   "ScoreboardTag": "SRA",  "Priority": 400 },
+    { "Name": "Admin",       "Match": { "Type": "AdminFlag", "Value": "admin:noclip" },      "Tag": "{darkred}[Admin] ",  "ScoreboardTag": "ADM",  "Priority": 300 },
+    { "Name": "Moderator",   "Match": { "Type": "AdminFlag", "Value": "admin:ban" },         "Tag": "{purple}[Mod] ",     "ScoreboardTag": "MOD",  "Priority": 200 },
+    { "Name": "Helper",      "Match": { "Type": "AdminFlag", "Value": "admin:kick" },        "Tag": "{green}[Helper] ",   "ScoreboardTag": "HLP",  "Priority": 150 },
+    { "Name": "VIP",         "Match": { "Type": "Vip",       "Value": "" },                  "Tag": "{gold}[VIP] ",       "Suffix": " {gold}[VIP]", "ScoreboardTag": "VIP",  "Priority": 100 },
+    { "Name": "Default",     "Match": { "Type": "Default",   "Value": "" },                  "Tag": "",                   "NameColor": "{teamcolor}", "ChatColor": "", "Priority": 0 }
   ]
 }
