@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Extensions.Logging;
 using Sharp.Modules.AdminManager.Shared;
+using Sharp.Modules.ClientPreferences.Shared;
 using Sharp.Shared;
 using Sharp.Shared.Managers;
 
@@ -22,7 +23,8 @@ internal sealed class InterfaceBridge
     internal IModSharp       ModSharp       { get; }
     internal ILoggerFactory  LoggerFactory  { get; }
 
-    internal IAdminManager? AdminManager { get; private set; }
+    internal IAdminManager?     AdminManager      { get; private set; }
+    internal IClientPreference? ClientPreferences { get; private set; }
 
     public InterfaceBridge(
         string          dllPath,
@@ -52,5 +54,8 @@ internal sealed class InterfaceBridge
     {
         AdminManager ??= SharpModuleManager
             .GetOptionalSharpModuleInterface<IAdminManager>(IAdminManager.Identity)?.Instance;
+
+        ClientPreferences ??= SharpModuleManager
+            .GetOptionalSharpModuleInterface<IClientPreference>(IClientPreference.Identity)?.Instance;
     }
 }

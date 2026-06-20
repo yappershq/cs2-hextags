@@ -51,6 +51,8 @@ internal sealed class ScoreboardTagModule : IModule, IClientListener
             ApplyFor(client);
     }
 
+    internal void RefreshFor(IGameClient client) => ApplyFor(client);
+
     private void ApplyFor(IGameClient client)
     {
         if (client.IsFakeClient) return;

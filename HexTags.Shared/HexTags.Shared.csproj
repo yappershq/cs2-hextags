@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>HexTags.Shared</AssemblyName>
+    <RootNamespace>HexTags.Shared</RootNamespace>
+  </PropertyGroup>
+</Project>

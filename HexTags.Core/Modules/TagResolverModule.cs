@@ -26,6 +26,7 @@ internal sealed class TagResolverModule : IModule, IClientListener
     private readonly InterfaceBridge                              _bridge;
     private readonly ILogger<TagResolverModule>                   _logger;
     private readonly HexTagsConfig                               _config;
+    private readonly HiddenTagState                              _hidden;
     private readonly ConcurrentDictionary<ulong, ResolvedTag>    _cache = new();
 
     // Swappable rule set. Seeded from JSON at construction so JSON-only servers
@@ -38,11 +39,12 @@ internal sealed class TagResolverModule : IModule, IClientListener
     int IClientListener.ListenerVersion  => IClientListener.ApiVersion;
     int IClientListener.ListenerPriority => 0;
 
-    public TagResolverModule(InterfaceBridge bridge, ILogger<TagResolverModule> logger, HexTagsConfig config)
+    public TagResolverModule(InterfaceBridge bridge, ILogger<TagResolverModule> logger, HexTagsConfig config, HiddenTagState hidden)
     {
         _bridge = bridge;
         _logger = logger;
         _config = config;
+        _hidden = hidden;
 
         // Config.Rules is already sorted DESC at load; re-sort defensively.
         _rules = config.Rules.OrderByDescending(static r => r.Priority).ToArray();
@@ -92,6 +94,9 @@ internal sealed class TagResolverModule : IModule, IClientListener
     private ResolvedTag ComputeTag(ulong steamId)
     {
         if (!_config.Enabled)
+            return new ResolvedTag();
+
+        if (_hidden.IsHidden(steamId))
             return new ResolvedTag();
 
         var am = _bridge.AdminManager;
