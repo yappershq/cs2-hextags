@@ -72,6 +72,11 @@ internal sealed class HideStateModule : IModule, IClientListener, IHexTagsShared
 
     private void ApplyPrefFromCookie(IGameClient client)
     {
+        // Bots / not-yet-authed clients have no valid SteamID — ClientPreferences.IsLoaded
+        // throws ArgumentException("Invalid SteamId") for them (fires every frame). Skip them.
+        if (client.IsFakeClient || !client.SteamId.IsValidUserId())
+            return;
+
         var cp = _bridge.ClientPreferences;
         if (cp is null || !cp.IsLoaded(client.SteamId))
             return;
